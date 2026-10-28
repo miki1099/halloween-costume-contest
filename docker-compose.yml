@@ -1,0 +1,13 @@
+services:
+  app:
+    build: .
+    ports:
+      - "8080:3000"
+    environment:
+      ADMIN_PASSWORD: Haloween2026
+    volumes:
+      - party-data:/data
+    restart: unless-stopped
+
+volumes:
+  party-data:

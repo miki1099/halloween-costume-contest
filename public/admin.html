@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#120a1c" />
+    <title>🧛 Contest Admin</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Creepster&display=swap" />
+    <link rel="stylesheet" href="/style.css" />
+  </head>
+  <body>
+    <main>
+      <h1>🧛 Host Lair</h1>
+
+      <section class="card" id="login">
+        <h2>🔒 Enter the password</h2>
+        <input type="password" id="password" autocomplete="current-password" />
+        <button id="login-button">Unlock</button>
+        <div id="login-message" class="message error hidden"></div>
+      </section>
+
+      <section id="panel" class="hidden">
+        <p class="status-pill" id="phase-pill"></p>
+
+        <div class="card">
+          <h2>Controls</h2>
+          <button id="start" class="hidden">🗳️ Start voting</button>
+          <button id="close" class="danger hidden">⛔ Close voting</button>
+          <button id="reopen" class="secondary hidden">↩️ Reopen voting</button>
+          <button id="back" class="secondary hidden">↩️ Back to enrollment</button>
+          <p class="subtitle" id="totals"></p>
+        </div>
+
+        <div class="card winner hidden" id="winner"></div>
+
+        <div class="grid" id="results"></div>
+      </section>
+    </main>
+    <script src="/admin.js"></script>
+  </body>
+</html>

@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#120a1c" />
+    <title>🎃 Halloween Costume Contest</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Creepster&display=swap" />
+    <link rel="stylesheet" href="/style.css" />
+  </head>
+  <body>
+    <main>
+      <h1>🎃 Costume Contest 👻</h1>
+      <p class="subtitle" id="subtitle">Snap your costume and join the contest!</p>
+
+      <section class="card" id="enroll">
+        <h2>📸 Add your costume</h2>
+        <label for="name">Your name or costume</label>
+        <input type="text" id="name" maxlength="60" placeholder="e.g. Count Dracula" autocomplete="off" />
+
+        <img id="preview" class="preview hidden" alt="Your photo" />
+
+        <div class="row">
+          <label class="button" for="camera">📷 Take photo</label>
+          <label class="button secondary" for="gallery">🖼️ Gallery</label>
+        </div>
+        <input type="file" id="camera" accept="image/*" capture="user" class="hidden" />
+        <input type="file" id="gallery" accept="image/*" class="hidden" />
+
+        <button id="submit" disabled>🕸️ Enter the contest</button>
+        <div id="enroll-message" class="message hidden"></div>
+      </section>
+
+      <section id="mine-section" class="hidden">
+        <h2>Your entries</h2>
+        <div class="grid" id="mine"></div>
+      </section>
+
+      <section id="vote-section" class="hidden">
+        <p class="status-pill">🗳️ Voting is open — tap your favourite costume</p>
+        <div id="vote-message" class="message hidden"></div>
+        <div class="grid" id="entries"></div>
+      </section>
+
+      <section id="closed-section" class="card hidden">
+        <h2>🦇 Voting is closed</h2>
+        <p>Thanks for voting! The winner will be announced soon…</p>
+      </section>
+    </main>
+    <script src="/guest.js"></script>
+  </body>
+</html>

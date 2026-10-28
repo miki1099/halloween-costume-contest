@@ -1,0 +1,249 @@
+:root {
+  --bg: #120a1c;
+  --card: #1f1330;
+  --text: #f4ecff;
+  --muted: #a99bbd;
+  --orange: #ff7a18;
+  --green: #7cff6b;
+  --danger: #ff4d6d;
+  --radius: 16px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  color: var(--text);
+  background: radial-gradient(circle at top, #2b1342 0%, var(--bg) 60%) fixed;
+  -webkit-tap-highlight-color: transparent;
+}
+
+main {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 24px 16px 64px;
+}
+
+h1 {
+  font-family: 'Creepster', 'Chiller', fantasy;
+  font-size: 2.6rem;
+  letter-spacing: 1px;
+  text-align: center;
+  color: var(--orange);
+  text-shadow: 0 0 18px rgba(255, 122, 24, 0.6);
+  margin: 8px 0 4px;
+}
+
+.subtitle {
+  text-align: center;
+  color: var(--muted);
+  margin: 0 0 24px;
+}
+
+.card {
+  background: var(--card);
+  border-radius: var(--radius);
+  padding: 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+}
+
+.card h2 {
+  margin-top: 0;
+  font-size: 1.25rem;
+}
+
+label {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--muted);
+}
+
+input[type='text'],
+input[type='password'] {
+  width: 100%;
+  padding: 14px;
+  font-size: 1rem;
+  border-radius: 12px;
+  border: 1px solid #3d2a57;
+  background: #140b20;
+  color: var(--text);
+}
+
+button,
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 14px 18px;
+  margin-top: 12px;
+  font-size: 1.05rem;
+  font-weight: 600;
+  border: none;
+  border-radius: 12px;
+  background: var(--orange);
+  color: #1a0d00;
+  cursor: pointer;
+}
+
+button.secondary,
+.button.secondary {
+  background: #3d2a57;
+  color: var(--text);
+}
+
+button.danger {
+  background: var(--danger);
+  color: #fff;
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.row {
+  display: flex;
+  gap: 10px;
+}
+
+.row > * {
+  flex: 1;
+}
+
+.hidden {
+  display: none !important;
+}
+
+.preview {
+  width: 100%;
+  margin-top: 12px;
+  border-radius: 12px;
+  aspect-ratio: 3 / 4;
+  object-fit: cover;
+  background: #140b20;
+}
+
+.message {
+  margin-top: 12px;
+  padding: 12px;
+  border-radius: 12px;
+  background: #140b20;
+  text-align: center;
+}
+
+.message.error {
+  color: var(--danger);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+@media (min-width: 560px) {
+  .grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.entry {
+  position: relative;
+  background: var(--card);
+  border-radius: var(--radius);
+  overflow: hidden;
+  border: 3px solid transparent;
+  transition: border-color 0.15s, transform 0.15s;
+}
+
+.entry img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  object-fit: cover;
+}
+
+.entry .name {
+  padding: 8px 10px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.entry.selectable {
+  cursor: pointer;
+}
+
+.entry.selectable:active {
+  transform: scale(0.97);
+}
+
+.entry.voted {
+  border-color: var(--green);
+}
+
+.entry .badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  background: rgba(0, 0, 0, 0.7);
+}
+
+.entry.voted .badge {
+  background: var(--green);
+  color: #0b2007;
+}
+
+.entry .votes {
+  padding: 0 10px 10px;
+  color: var(--orange);
+  font-weight: 700;
+}
+
+.entry .remove {
+  margin: 0;
+  border-radius: 0;
+  padding: 8px;
+  font-size: 0.9rem;
+}
+
+.status-pill {
+  display: block;
+  width: fit-content;
+  margin: 0 auto 20px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: #3d2a57;
+  font-weight: 600;
+}
+
+.winner {
+  text-align: center;
+}
+
+.winner img {
+  width: min(320px, 100%);
+  aspect-ratio: 3 / 4;
+  object-fit: cover;
+  border-radius: var(--radius);
+  border: 4px solid var(--orange);
+  box-shadow: 0 0 40px rgba(255, 122, 24, 0.7);
+}
+
+.winner .name {
+  font-size: 1.6rem;
+  font-weight: 800;
+  margin-top: 10px;
+}
