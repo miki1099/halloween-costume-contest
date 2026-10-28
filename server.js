@@ -9,7 +9,26 @@ const DATA_DIR = process.env.DATA_DIR || './data';
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'Haloween2026';
 const PHOTO_DIR = join(DATA_DIR, 'photos');
 const PUBLIC_DIR = join(import.meta.dirname, 'public');
+const PARTY_CODE = process.env.PARTY_CODE || '';
+const TRUST_PROXY = process.env.TRUST_PROXY === 'true';
 const MAX_BODY_BYTES = 8 * 1024 * 1024;
+const MAX_ENTRIES = 200;
+const MAX_ENTRIES_PER_DEVICE = 3;
+const ADMIN_MAX_FAILURES = 5;
+const ADMIN_LOCKOUT_MS = 15 * 60 * 1000;
+
+const SECURITY_HEADERS = {
+  'X-Content-Type-Options': 'nosniff',
+  'X-Frame-Options': 'DENY',
+  'Referrer-Policy': 'no-referrer',
+  'Content-Security-Policy': [
+    "default-src 'self'",
+    "img-src 'self' data: blob:",
+    "style-src 'self' https://fonts.googleapis.com",
+    'font-src https://fonts.gstatic.com',
+    "frame-ancestors 'none'",
+  ].join('; '),
+};
 
 mkdirSync(PHOTO_DIR, { recursive: true });
 
@@ -79,14 +98,45 @@ function getDeviceId(req, res) {
     return existing;
   }
   const deviceId = randomUUID();
-  res.setHeader('Set-Cookie', `device=${deviceId}; Path=/; Max-Age=2592000; HttpOnly; SameSite=Lax`);
+  res.appendHeader('Set-Cookie', `device=${deviceId}; Path=/; Max-Age=2592000; HttpOnly; SameSite=Lax`);
   return deviceId;
 }
 
-function isAdmin(req) {
-  const given = Buffer.from(String(req.headers['x-admin-password'] || ''));
-  const expected = Buffer.from(ADMIN_PASSWORD);
-  return given.length === expected.length && timingSafeEqual(given, expected);
+function safeEquals(given, expected) {
+  const givenBuffer = Buffer.from(String(given || ''));
+  const expectedBuffer = Buffer.from(expected);
+  return givenBuffer.length === expectedBuffer.length && timingSafeEqual(givenBuffer, expectedBuffer);
+}
+
+function clientIp(req) {
+  if (TRUST_PROXY && req.headers['x-forwarded-for']) {
+    return req.headers['x-forwarded-for'].split(',').pop().trim();
+  }
+  return req.socket.remoteAddress;
+}
+
+const adminFailures = new Map();
+
+function checkAdmin(req) {
+  const ip = clientIp(req);
+  const failure = adminFailures.get(ip);
+  if (failure && failure.count >= ADMIN_MAX_FAILURES && Date.now() - failure.lastAt < ADMIN_LOCKOUT_MS) {
+    throw new HttpError(429, 'Too many wrong passwords, try again in 15 minutes');
+  }
+  if (!safeEquals(req.headers['x-admin-password'], ADMIN_PASSWORD)) {
+    const count = failure && Date.now() - failure.lastAt < ADMIN_LOCKOUT_MS ? failure.count + 1 : 1;
+    adminFailures.set(ip, { count, lastAt: Date.now() });
+    throw new HttpError(401, 'Wrong password');
+  }
+  adminFailures.delete(ip);
+}
+
+function hasPartyAccess(req) {
+  return !PARTY_CODE || safeEquals(parseCookies(req).party, PARTY_CODE);
+}
+
+function partyCookie() {
+  return `party=${encodeURIComponent(PARTY_CODE)}; Path=/; Max-Age=2592000; HttpOnly; SameSite=Lax`;
 }
 
 async function readJson(req) {
@@ -152,8 +202,21 @@ const routes = {
     if (!match) {
       throw new HttpError(400, 'Photo must be a JPEG');
     }
+    const image = Buffer.from(match[1], 'base64');
+    if (image.length < 3 || image[0] !== 0xff || image[1] !== 0xd8 || image[2] !== 0xff) {
+      throw new HttpError(400, 'Photo must be a JPEG');
+    }
+    const { total, mine } = db
+      .prepare(`SELECT COUNT(*) AS total, COALESCE(SUM(device_id = ?), 0) AS mine FROM entries`)
+      .get(deviceId);
+    if (mine >= MAX_ENTRIES_PER_DEVICE) {
+      throw new HttpError(429, `You can add up to ${MAX_ENTRIES_PER_DEVICE} costumes from one phone`);
+    }
+    if (total >= MAX_ENTRIES) {
+      throw new HttpError(429, 'The contest is full');
+    }
     const fileName = `${randomUUID()}.jpg`;
-    writeFileSync(join(PHOTO_DIR, fileName), Buffer.from(match[1], 'base64'));
+    writeFileSync(join(PHOTO_DIR, fileName), image);
     const { lastInsertRowid } = db
       .prepare(`INSERT INTO entries (name, photo, device_id) VALUES (?, ?, ?)`)
       .run(trimmedName, fileName, deviceId);
@@ -180,6 +243,9 @@ const routes = {
   },
 
   'GET /api/admin/results': (req, res) => {
+    if (PARTY_CODE) {
+      res.appendHeader('Set-Cookie', partyCookie());
+    }
     const entries = db
       .prepare(
         `SELECT e.id, e.name, e.photo, COUNT(v.device_id) AS votes
@@ -210,10 +276,27 @@ const routes = {
 };
 
 const server = createServer(async (req, res) => {
-  const { pathname } = new URL(req.url, 'http://localhost');
+  const { pathname, searchParams } = new URL(req.url, 'http://localhost');
+  for (const [name, value] of Object.entries(SECURITY_HEADERS)) {
+    res.setHeader(name, value);
+  }
   try {
-    if (pathname.startsWith('/api/admin/') && !isAdmin(req)) {
-      throw new HttpError(401, 'Wrong password');
+    if (pathname === '/' && PARTY_CODE && searchParams.has('code')) {
+      if (safeEquals(searchParams.get('code'), PARTY_CODE)) {
+        res.writeHead(302, { Location: '/', 'Set-Cookie': partyCookie() });
+        return res.end();
+      }
+      return sendFile(res, join(PUBLIC_DIR, 'locked.html'));
+    }
+    if (pathname.startsWith('/api/admin/')) {
+      checkAdmin(req);
+    } else if (!hasPartyAccess(req)) {
+      if (pathname === '/') {
+        return sendFile(res, join(PUBLIC_DIR, 'locked.html'));
+      }
+      if (pathname.startsWith('/api/') || pathname.startsWith('/photos/')) {
+        throw new HttpError(403, 'Scan the QR code at the party to join');
+      }
     }
     const handler = routes[`${req.method} ${pathname}`];
     if (handler) {
@@ -225,7 +308,7 @@ const server = createServer(async (req, res) => {
     }
     const photo = /^\/photos\/([0-9a-f-]{36}\.jpg)$/.exec(pathname);
     if (photo) {
-      return sendFile(res, join(PHOTO_DIR, photo[1]), 'public, max-age=31536000, immutable');
+      return sendFile(res, join(PHOTO_DIR, photo[1]), 'private, max-age=31536000, immutable');
     }
     if (pathname === '/' || pathname === '/admin') {
       getDeviceId(req, res);
