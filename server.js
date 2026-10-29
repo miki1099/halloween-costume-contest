@@ -1,7 +1,7 @@
 import { createServer } from 'node:http';
 import { DatabaseSync } from 'node:sqlite';
 import { randomUUID, timingSafeEqual } from 'node:crypto';
-import { mkdirSync, writeFileSync, existsSync, createReadStream, rmSync } from 'node:fs';
+import { mkdirSync, readFileSync, writeFileSync, existsSync, createReadStream, rmSync } from 'node:fs';
 import { join, extname } from 'node:path';
 
 const PORT = Number(process.env.PORT || 3000);
@@ -11,6 +11,7 @@ const PHOTO_DIR = join(DATA_DIR, 'photos');
 const PUBLIC_DIR = join(import.meta.dirname, 'public');
 const TRUST_PROXY = process.env.TRUST_PROXY === 'true';
 const MAX_BODY_BYTES = 8 * 1024 * 1024;
+const ASSET_VERSION = Date.now().toString(36);
 const MAX_ENTRIES = 200;
 const ADMIN_MAX_FAILURES = 5;
 const ADMIN_LOCKOUT_MS = 15 * 60 * 1000;
@@ -67,6 +68,15 @@ const CONTENT_TYPES = {
 function sendJson(res, status, body) {
   res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });
   res.end(JSON.stringify(body));
+}
+
+function sendPage(res, fileName) {
+  const html = readFileSync(join(PUBLIC_DIR, fileName), 'utf8').replace(
+    /(href|src)="\/([a-z]+\.(?:css|js))"/g,
+    `$1="/$2?v=${ASSET_VERSION}"`,
+  );
+  res.writeHead(200, { 'Content-Type': CONTENT_TYPES['.html'], 'Cache-Control': 'no-store' });
+  res.end(html);
 }
 
 function sendFile(res, path, cacheControl = 'no-cache') {
@@ -300,7 +310,7 @@ const server = createServer(async (req, res) => {
     }
     if (pathname === '/' || pathname === '/admin') {
       getDeviceId(req, res);
-      return sendFile(res, join(PUBLIC_DIR, pathname === '/' ? 'index.html' : 'admin.html'));
+      return sendPage(res, pathname === '/' ? 'index.html' : 'admin.html');
     }
     const asset = /^\/([a-z]+\.(?:css|js|svg))$/.exec(pathname);
     if (asset) {
