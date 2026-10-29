@@ -9,7 +9,6 @@ const DATA_DIR = process.env.DATA_DIR || './data';
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'Haloween2026';
 const PHOTO_DIR = join(DATA_DIR, 'photos');
 const PUBLIC_DIR = join(import.meta.dirname, 'public');
-const PARTY_CODE = process.env.PARTY_CODE || '';
 const TRUST_PROXY = process.env.TRUST_PROXY === 'true';
 const MAX_BODY_BYTES = 8 * 1024 * 1024;
 const MAX_ENTRIES = 200;
@@ -130,13 +129,6 @@ function checkAdmin(req) {
   adminFailures.delete(ip);
 }
 
-function hasPartyAccess(req) {
-  return !PARTY_CODE || safeEquals(parseCookies(req).party, PARTY_CODE);
-}
-
-function partyCookie() {
-  return `party=${encodeURIComponent(PARTY_CODE)}; Path=/; Max-Age=2592000; HttpOnly; SameSite=Lax`;
-}
 
 async function readJson(req) {
   const chunks = [];
@@ -256,9 +248,6 @@ const routes = {
   },
 
   'GET /api/admin/results': (req, res) => {
-    if (PARTY_CODE) {
-      res.appendHeader('Set-Cookie', partyCookie());
-    }
     const entries = db
       .prepare(
         `SELECT e.id, e.name, e.photo, COUNT(v.device_id) AS votes
@@ -289,27 +278,13 @@ const routes = {
 };
 
 const server = createServer(async (req, res) => {
-  const { pathname, searchParams } = new URL(req.url, 'http://localhost');
+  const { pathname } = new URL(req.url, 'http://localhost');
   for (const [name, value] of Object.entries(SECURITY_HEADERS)) {
     res.setHeader(name, value);
   }
   try {
-    if (pathname === '/' && PARTY_CODE && searchParams.has('code')) {
-      if (safeEquals(searchParams.get('code'), PARTY_CODE)) {
-        res.writeHead(302, { Location: '/', 'Set-Cookie': partyCookie() });
-        return res.end();
-      }
-      return sendFile(res, join(PUBLIC_DIR, 'locked.html'));
-    }
     if (pathname.startsWith('/api/admin/')) {
       checkAdmin(req);
-    } else if (!hasPartyAccess(req)) {
-      if (pathname === '/') {
-        return sendFile(res, join(PUBLIC_DIR, 'locked.html'));
-      }
-      if (pathname.startsWith('/api/') || pathname.startsWith('/photos/')) {
-        throw new HttpError(403, 'Scan the QR code at the party to join');
-      }
     }
     const handler = routes[`${req.method} ${pathname}`];
     if (handler) {

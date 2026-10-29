@@ -5,7 +5,6 @@ services:
       - "${BIND_ADDRESS:-0.0.0.0}:8096:3000"
     environment:
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-Haloween2026}
-      PARTY_CODE: ${PARTY_CODE:-}
       TRUST_PROXY: ${TRUST_PROXY:-false}
     volumes:
       - party-data:/data

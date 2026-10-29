@@ -13,14 +13,14 @@ docker compose up -d --build
 
 ## Exposing it to the internet
 
-1. `cp .env.example .env` and set a long `ADMIN_PASSWORD` and a random `PARTY_CODE` (e.g. `openssl rand -hex 4`).
+1. `cp .env.example .env` and set a long `ADMIN_PASSWORD`.
 2. Put it behind HTTPS. With Caddy on the same host, set `BIND_ADDRESS=127.0.0.1` and `TRUST_PROXY=true` in `.env`, then:
    ```bash
    docker run -d --name caddy --restart unless-stopped --network host -v caddy-data:/data caddy:2 \
      caddy reverse-proxy --from party.example.com --to localhost:8096
    ```
 3. `docker compose up -d --build`
-4. Make the QR code point to `https://party.example.com/?code=<PARTY_CODE>`. Anyone without the code sees a "party guests only" page and cannot upload, vote or see photos.
+4. Make the QR code point to `https://party.example.com`.
 
 Built-in limits: 5 wrong admin passwords per IP lock that IP out for 15 minutes, 1 entry per phone (removable by its owner until voting starts), 200 entries in total, uploads must be real JPEGs up to 8 MB.
 
