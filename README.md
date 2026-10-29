@@ -26,7 +26,7 @@ Built-in limits: 5 wrong admin passwords per IP lock that IP out for 15 minutes,
 
 ## How it works
 
-1. **Enrollment** — guests enter a name and take a photo (or pick one from the gallery). Photos are resized on the phone before upload. Each phone can enter one photo and remove it again until voting starts.
+1. **Enrollment** — guests enter a name and take a photo (or pick one from the gallery). Photos are resized on the phone before upload. Everyone sees all entered photos right away. Each phone can enter one photo and remove it again until voting starts.
 2. **Voting** — the host presses *Start voting*. Guests see every costume and tap one to vote. One vote per phone, changeable until voting closes, and you can't vote for your own costume.
 3. **Closed** — the host presses *Close voting*; the admin page shows the winner (or the tie) and the full leaderboard. Results are only ever visible on the admin page.
 

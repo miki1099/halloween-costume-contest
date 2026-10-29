@@ -155,19 +155,28 @@ function render() {
   const mine = entries.filter((entry) => entry.mine);
 
   $('enroll').classList.toggle('hidden', phase === 'closed' || mine.length > 0);
-  $('vote-section').classList.toggle('hidden', phase !== 'voting');
+  $('entries-section').classList.toggle('hidden', phase === 'closed' || entries.length === 0);
   $('closed-section').classList.toggle('hidden', phase !== 'closed');
-  $('mine-section').classList.toggle('hidden', phase !== 'enrollment' || mine.length === 0);
+
+  if (phase === 'voting') {
+    $('entries-pill').textContent = '🗳️ Voting is open — tap your favourite costume';
+  } else if (mine.length > 0) {
+    $('entries-pill').textContent = "🎉 You're in! Wait for the host to open voting.";
+  } else {
+    $('entries-pill').textContent = '👻 Costumes so far';
+  }
 
   $('subtitle').textContent =
     phase === 'voting'
       ? 'Voting is open! You can change your vote until the host closes it.'
       : 'Snap your costume and join the contest!';
 
-  $('mine').replaceChildren(...mine.map((entry) => entryTile(entry, { selectable: false, removable: true })));
-  if (phase === 'voting') {
-    $('entries').replaceChildren(...entries.map((entry) => entryTile(entry, { selectable: true })));
-  }
+  const ordered = [...mine, ...entries.filter((entry) => !entry.mine)];
+  $('entries').replaceChildren(
+    ...ordered.map((entry) =>
+      entryTile(entry, { selectable: phase === 'voting', removable: phase === 'enrollment' }),
+    ),
+  );
 }
 
 async function refresh() {

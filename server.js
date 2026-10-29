@@ -175,7 +175,7 @@ const routes = {
     const phase = getPhase();
     sendJson(res, 200, {
       phase,
-      entries: phase === 'enrollment' ? listEntries(deviceId).filter((e) => e.mine) : listEntries(deviceId),
+      entries: listEntries(deviceId),
       myVote: myVote(deviceId),
     });
   },

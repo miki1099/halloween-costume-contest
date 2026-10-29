@@ -247,8 +247,3 @@ button:disabled {
   font-weight: 800;
   margin-top: 10px;
 }
-
-#mine {
-  grid-template-columns: min(260px, 100%);
-  justify-content: center;
-}
