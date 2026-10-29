@@ -1,7 +1,7 @@
 import { createServer } from 'node:http';
 import { DatabaseSync } from 'node:sqlite';
 import { randomUUID, timingSafeEqual } from 'node:crypto';
-import { mkdirSync, writeFileSync, existsSync, createReadStream } from 'node:fs';
+import { mkdirSync, writeFileSync, existsSync, createReadStream, rmSync } from 'node:fs';
 import { join, extname } from 'node:path';
 
 const PORT = Number(process.env.PORT || 3000);
@@ -13,7 +13,6 @@ const PARTY_CODE = process.env.PARTY_CODE || '';
 const TRUST_PROXY = process.env.TRUST_PROXY === 'true';
 const MAX_BODY_BYTES = 8 * 1024 * 1024;
 const MAX_ENTRIES = 200;
-const MAX_ENTRIES_PER_DEVICE = 3;
 const ADMIN_MAX_FAILURES = 5;
 const ADMIN_LOCKOUT_MS = 15 * 60 * 1000;
 
@@ -209,8 +208,8 @@ const routes = {
     const { total, mine } = db
       .prepare(`SELECT COUNT(*) AS total, COALESCE(SUM(device_id = ?), 0) AS mine FROM entries`)
       .get(deviceId);
-    if (mine >= MAX_ENTRIES_PER_DEVICE) {
-      throw new HttpError(429, `You can add up to ${MAX_ENTRIES_PER_DEVICE} costumes from one phone`);
+    if (mine > 0) {
+      throw new HttpError(409, 'You already entered the contest. Remove your photo first to add a new one');
     }
     if (total >= MAX_ENTRIES) {
       throw new HttpError(429, 'The contest is full');
@@ -221,6 +220,20 @@ const routes = {
       .prepare(`INSERT INTO entries (name, photo, device_id) VALUES (?, ?, ?)`)
       .run(trimmedName, fileName, deviceId);
     sendJson(res, 201, { id: Number(lastInsertRowid) });
+  },
+
+  'DELETE /api/entries/mine': (req, res, deviceId) => {
+    if (getPhase() !== 'enrollment') {
+      throw new HttpError(409, 'Voting has started, your photo can no longer be removed');
+    }
+    const entry = db.prepare(`SELECT id, photo FROM entries WHERE device_id = ?`).get(deviceId);
+    if (!entry) {
+      throw new HttpError(404, 'You have no photo in the contest');
+    }
+    db.prepare(`DELETE FROM votes WHERE entry_id = ?`).run(entry.id);
+    db.prepare(`DELETE FROM entries WHERE id = ?`).run(entry.id);
+    rmSync(join(PHOTO_DIR, entry.photo), { force: true });
+    sendJson(res, 200, { ok: true });
   },
 
   'POST /api/vote': async (req, res, deviceId) => {

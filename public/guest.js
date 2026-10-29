@@ -79,7 +79,6 @@ async function submitEntry() {
     photoDataUrl = null;
     $('name').value = '';
     $('preview').classList.add('hidden');
-    showMessage($('enroll-message'), "🎉 You're in! Wait for the host to open voting.");
     await refresh();
   } catch (error) {
     showMessage($('enroll-message'), error.message, true);
@@ -100,7 +99,20 @@ async function vote(entryId) {
   }
 }
 
-function entryTile(entry, { selectable }) {
+async function removeMyEntry() {
+  if (!confirm('Remove your photo from the contest?')) {
+    return;
+  }
+  try {
+    await api('/api/entries/mine', { method: 'DELETE' });
+    $('enroll-message').classList.add('hidden');
+  } catch (error) {
+    alert(error.message);
+  }
+  await refresh();
+}
+
+function entryTile(entry, { selectable, removable = false }) {
   const tile = document.createElement('div');
   tile.className = 'entry';
   const image = document.createElement('img');
@@ -117,6 +129,13 @@ function entryTile(entry, { selectable }) {
     badge.className = 'badge';
     badge.textContent = 'You';
     tile.append(badge);
+    if (removable) {
+      const remove = document.createElement('button');
+      remove.className = 'remove secondary';
+      remove.textContent = '🗑️ Remove my photo';
+      remove.addEventListener('click', removeMyEntry);
+      tile.append(remove);
+    }
   } else if (selectable) {
     tile.classList.add('selectable');
     tile.addEventListener('click', () => vote(entry.id));
@@ -135,7 +154,7 @@ function render() {
   const { phase, entries } = state;
   const mine = entries.filter((entry) => entry.mine);
 
-  $('enroll').classList.toggle('hidden', phase === 'closed');
+  $('enroll').classList.toggle('hidden', phase === 'closed' || mine.length > 0);
   $('vote-section').classList.toggle('hidden', phase !== 'voting');
   $('closed-section').classList.toggle('hidden', phase !== 'closed');
   $('mine-section').classList.toggle('hidden', phase !== 'enrollment' || mine.length === 0);
@@ -145,7 +164,7 @@ function render() {
       ? 'Voting is open! You can change your vote until the host closes it.'
       : 'Snap your costume and join the contest!';
 
-  $('mine').replaceChildren(...mine.map((entry) => entryTile(entry, { selectable: false })));
+  $('mine').replaceChildren(...mine.map((entry) => entryTile(entry, { selectable: false, removable: true })));
   if (phase === 'voting') {
     $('entries').replaceChildren(...entries.map((entry) => entryTile(entry, { selectable: true })));
   }
